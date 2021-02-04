@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>IndexedDB Demo</title>
+    </head>
+    <body>
+        DB: <input type="text" value="personal_notes" id="txtDB">
+        Version: <input type="text" value="1" id="txtVersion">
+        <button id="btnCreateDB">Ceate/Open DB</button>
+
+        Note title: <input type="text" value="note title" id="pnote-title">
+        Personal note: <input type="text" value="This is my notes" id="pnote-text">
+        <button id="btnNote">Add note</button>
+        <button id="btnViewNotes">View note</button>
+
+        <script>
+            let db = null;
+            const btnCreateDB = document.getElementById('btnCreateDB');
+            btnCreateDB.addEventListener("click", createDB);
+            
+            const btnNote = document.getElementById('btnNote');
+            btnNote.addEventListener("click", addNote);
+
+            const btnViewNotes = document.getElementById("btnViewNotes");
+            btnViewNotes.addEventListener("click", viewNotes);
+
+            function viewNotes () {
+                const tx = db.transaction("personal_notes", "readonly");
+                const pNotes = tx.objectStore("personal_notes");
+                const request = pNotes.openCursor();
+                request.onsuccess = e => {
+                    const cursor = e.target.result
+                    if(cursor){
+                        //do something
+                        console.log(cursor);
+                        cursor.continue();
+                    }
+                }
+
+            }
+            function addNote () {
+                const note_title = document.getElementById("pnote-title").value;
+                const note_text = document.getElementById("pnote-text").value;
+
+                const note = {
+                    title: note_title,
+                    text: note_text,
+                }
+
+                const tx = db.transaction("personal_notes", "readwrite");
+                const pNotes = tx.objectStore("personal_notes");
+                pNotes.add(note); 
+            }
+            function createDB () {
+                const dbName = document.getElementById("txtDB").value;
+                const dbVersion = document.getElementById("txtVersion").value;
+
+                const request = indexedDB.open(dbName, dbVersion);
+
+                // const request = indexedDB.open("notes")
+                request.onupgradeneeded = e => {
+                    db = e.target.result
+                    const pNotes = db.createObjectStore("personal_notes", {keyPath: "title"});
+                    alert("upgrade needed called");
+                }
+
+                request.onsuccess = e => {
+                    db = e.target.result
+                    alert("onsuccess called " + db.name + " " + db.version);
+                }
+
+                request.onerror = e => {
+                    alert("error called " + e.target.error);
+                }
+            }
+        </script>
+    </body>
+</html>
